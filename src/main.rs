@@ -1,10 +1,6 @@
-use std::cmp::min;
-use std::io::BufRead;
-use std::io::BufReader;
 use std::io::Write;
 
 use anyhow::anyhow;
-use anyhow::Context;
 use serde_json::Value;
 
 mod emoji;
@@ -22,10 +18,10 @@ struct Args {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 struct Team {
     id: String,
     // actually a uuid but whatever
-    #[serde(rename = "fullName")]
     full_name: String,
     location: String,
     nickname: String,
@@ -80,6 +76,7 @@ fn fetch_teams() -> anyhow::Result<Vec<Team>> {
 
 fn main() -> anyhow::Result<()> {
     let args: Args = argh::from_env();
+    pretty_env_logger::init();
 
     let teams = fetch_teams()?;
     let target = teams.iter().find(|&e| {
@@ -90,8 +87,8 @@ fn main() -> anyhow::Result<()> {
 
     let event_source = event_source::EventSource::new(STREAM_ENDPOINT);
 
-    for event in event_source {
-        let val = serde_json::from_str::<Value>(&event.data);
+    for message in event_source {
+        let val = serde_json::from_str::<Value>(&message.data);
 
         if let Ok(v) = val {
             let games = v["value"]["games"]["schedule"].clone();
