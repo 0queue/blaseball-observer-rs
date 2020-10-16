@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use anyhow::anyhow;
 use serde_json::Value;
 
@@ -74,6 +72,13 @@ fn fetch_teams() -> anyhow::Result<Vec<Team>> {
     return Ok(v);
 }
 
+fn message_to_games(msg: &event_source::Message) -> Result<Vec<Game>, serde_json::Error> {
+    serde_json::from_str::<Value>(&msg.data).and_then(|v| {
+        let games = v["value"]["games"]["schedule"].clone();
+        serde_json::from_value::<Vec<Game>>(games)
+    })
+}
+
 fn main() -> anyhow::Result<()> {
     let args: Args = argh::from_env();
     pretty_env_logger::init();
@@ -85,34 +90,25 @@ fn main() -> anyhow::Result<()> {
 
     println!("target: {:?}", target);
 
-    let event_source = event_source::EventSource::new(STREAM_ENDPOINT);
+    let schedule_events = event_source::EventSource::new(STREAM_ENDPOINT)
+        .flat_map(|m| {
+            let json = message_to_games(&m);
 
-    for message in event_source {
-        let val = serde_json::from_str::<Value>(&message.data);
+            if json.is_err() {
+                log::warn!("error while decoding {:?}", &json)
+            }
 
-        if let Ok(v) = val {
-            let games = v["value"]["games"]["schedule"].clone();
-            let games: Vec<Game> = match serde_json::from_value(games) {
-                Ok(g) => g,
-                Err(e) => {
-                    eprintln!("could not deserialize value.games.schedule");
-                    eprintln!("{:?}", e);
-                    continue;
-                }
-            };
+            json
+        });
 
-            let target_game = match games.iter().find(|&g| g.away_team == target.id || g.home_team == target.id) {
-                Some(g) => g,
-                None => continue
-            };
+    for games in schedule_events {
 
-            println!("Found game {}: {} @ {}", target_game.id, target_game.away_team_emoji, target_game.home_team_emoji);
-        } else {
-            eprintln!("received non json data")
-        }
+        let target_game = match games.iter().find(|&g| g.away_team == target.id || g.home_team == target.id) {
+            Some(g) => g,
+            None => continue
+        };
 
-        std::io::stdout().flush().unwrap();
-        std::io::stderr().flush().unwrap();
+        println!("Found game {}: {} @ {}", target_game.id, target_game.away_team_emoji, target_game.home_team_emoji);
     }
 
     println!("all done");
