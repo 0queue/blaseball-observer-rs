@@ -1,8 +1,11 @@
 use anyhow::anyhow;
 use serde_json::Value;
-use crate::game_event::{PlayBall, GameEvent, NotifyGameStart};
+use crate::game_event::PlayBall;
+use crate::game_event::GameEvent;
+use crate::game_event::NotifyGameStart;
 
 mod emoji;
+mod weather;
 mod event_source;
 mod game_event;
 
@@ -65,7 +68,8 @@ pub struct Game {
     top_of_inning: bool,
     at_bat_balls: u32,
     at_bat_strikes: u32,
-    weather: u32,
+    #[serde(deserialize_with = "weather::deserialize")]
+    weather: String,
 }
 
 fn fetch_teams() -> anyhow::Result<Vec<Team>> {
