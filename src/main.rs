@@ -1,8 +1,10 @@
 use anyhow::anyhow;
 use serde_json::Value;
+use crate::game_event::{PlayBall, GameEvent, NotifyGameStart};
 
 mod emoji;
 mod event_source;
+mod game_event;
 
 const ALL_TEAMS_ENDPOINT: &str = "https://www.blaseball.com/database/allTeams";
 const STREAM_ENDPOINT: &str = "https://www.blaseball.com/events/streamData";
@@ -30,7 +32,7 @@ struct Team {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct Game {
+pub struct Game {
     id: String,
     bases_occupied: Vec<i32>,
     last_update: String,
@@ -99,16 +101,27 @@ fn main() -> anyhow::Result<()> {
             }
 
             json
+        })
+        .flat_map(|gs| {
+            let game = gs.into_iter().find(|g| {
+                g.away_team == target.id || g.home_team == target.id
+            });
+
+            if game.is_none() {
+                log::warn!("No game found for the {}", target.full_name);
+            }
+
+            game
         });
 
-    for games in schedule_events {
+    let mut prev: Option<Game> = None;
+    for cur in schedule_events {
+        println!("Found game {}: {} @ {}", cur.id, cur.away_team_emoji, cur.home_team_emoji);
 
-        let target_game = match games.iter().find(|&g| g.away_team == target.id || g.home_team == target.id) {
-            Some(g) => g,
-            None => continue
-        };
+        PlayBall::accept(&prev, &cur);
+        NotifyGameStart::accept(&prev, &cur);
 
-        println!("Found game {}: {} @ {}", target_game.id, target_game.away_team_emoji, target_game.home_team_emoji);
+        prev.replace(cur);
     }
 
     println!("all done");
