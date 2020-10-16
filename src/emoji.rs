@@ -20,6 +20,6 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<char, D::Error> where D: s
         }
     }
 
-    deserializer.deserialize_str(EmojiVisitor)
+    deserializer.deserialize_any(EmojiVisitor)
 }
 

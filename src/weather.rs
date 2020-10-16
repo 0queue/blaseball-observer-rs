@@ -1,4 +1,4 @@
-fn weather(w: u32) -> String {
+fn weather(w: u64) -> String {
     match w {
         01 => "Sunny",
         07 => "Solar Eclipse",
@@ -21,7 +21,7 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<String, D::Error> where D:
             formatter.write_str("a number representing the weather")
         }
 
-        fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
+        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,
         {
@@ -29,6 +29,6 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<String, D::Error> where D:
         }
     }
 
-    deserializer.deserialize_str(WeatherVisitor)
+    deserializer.deserialize_any(WeatherVisitor)
 }
 
