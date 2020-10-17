@@ -59,12 +59,7 @@ pub struct NotifyGameStart;
 
 impl GameEvent for NotifyGameStart {
     fn accept(prev: &Option<Game>, cur: &Game, _rooting_for: &Team) {
-        let is_first = match (prev, cur.game_start) {
-            (Some(ref p), true) if !p.game_start => true,
-            _ => false
-        };
-
-        if !is_first {
+        if !matches!((prev, cur.game_start), (Some(ref p), true) if !p.game_start) {
             return;
         }
 
@@ -186,12 +181,7 @@ pub struct GameOver;
 
 impl GameEvent for GameOver {
     fn accept(prev: &Option<Game>, cur: &Game, rooting_for: &Team) {
-        let is_over = match prev {
-            Some(p) if !p.game_complete && cur.game_complete => true,
-            _ => false,
-        };
-
-        if !is_over {
+        if !matches!(prev, Some(p) if !p.game_complete && cur.game_complete) {
             return;
         }
 
@@ -202,12 +192,10 @@ impl GameEvent for GameOver {
 
         let judgement = if rooting_for.nickname.to_lowercase() == "crabs" {
             if team_score > other_score { "Crabs good!" } else { "Crabs bad!" }.to_string()
+        } else if team_score > other_score {
+            format!("{} win!", rooting_for.nickname)
         } else {
-            if team_score > other_score {
-                format!("{} win!", rooting_for.nickname)
-            } else {
-                format!("{} lose!", rooting_for.nickname)
-            }
+            format!("{} lose!", rooting_for.nickname)
         };
 
         let message = format!(

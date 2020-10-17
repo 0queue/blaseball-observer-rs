@@ -29,7 +29,7 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<char, D::Error> where D: s
 pub fn pad(emoji: char) -> String {
     match unicode_width::UnicodeWidthChar::width(emoji) {
         Some(2) => emoji.to_string(),
-        _ => format!("{} ", emoji).to_string(),
+        _ => format!("{} ", emoji),
     }
 }
 

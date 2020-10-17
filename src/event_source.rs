@@ -135,7 +135,7 @@ impl EventSource {
                     data.push('\n');
                 }
                 "id" => {
-                    if !content.contains("\0") {
+                    if !content.contains('\0') {
                         self.last_event_id = Some(content.to_string());
                     }
                 }

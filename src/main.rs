@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use serde_json::Value;
 use crate::game_event::{PlayBall, Status, GameOver};
 use crate::game_event::GameEvent;
@@ -79,8 +79,7 @@ pub struct Game {
 
 fn fetch_teams() -> anyhow::Result<Vec<Team>> {
     let body = ureq::get(ALL_TEAMS_ENDPOINT).call().into_reader();
-    let v: Vec<Team> = serde_json::from_reader(body)?;
-    return Ok(v);
+    serde_json::from_reader(body).with_context(|| anyhow!("could not decode from teams endpoint {}"))
 }
 
 fn message_to_games(msg: &event_source::Message) -> Result<Vec<Game>, serde_json::Error> {
@@ -98,7 +97,7 @@ fn main() -> anyhow::Result<()> {
     let teams = fetch_teams()?;
     let rooting_for = teams.iter().find(|&e| {
         e.nickname.to_ascii_lowercase() == args.team_name.to_ascii_lowercase()
-    }).ok_or(anyhow!("no team found"))?;
+    }).ok_or_else(|| anyhow!("no team found"))?;
 
     println!("Rooting for the {} {}", emoji::pad(rooting_for.emoji), rooting_for.full_name);
 

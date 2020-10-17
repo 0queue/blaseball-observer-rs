@@ -1,8 +1,8 @@
 fn weather(w: u64) -> String {
     match w {
-        01 => "Sunny",
-        07 => "Solar Eclipse",
-        09 => "Blooddrain",
+        1 => "Sunny",
+        7 => "Solar Eclipse",
+        9 => "Blooddrain",
         10 => "Peanuts",
         11 => "Lots of Birds",
         12 => "Feedback",
