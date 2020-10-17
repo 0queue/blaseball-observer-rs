@@ -23,3 +23,13 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<char, D::Error> where D: s
     deserializer.deserialize_any(EmojiVisitor)
 }
 
+// NOTE: seems to work better than {:2}, but in some terminals (or fonts maybe?)
+//       the width is still inconsistent (like the intellij terminal).
+//       Gnome terminal seems good though, so w/e
+pub fn pad(emoji: char) -> String {
+    match unicode_width::UnicodeWidthChar::width(emoji) {
+        Some(2) => emoji.to_string(),
+        _ => format!("{} ", emoji).to_string(),
+    }
+}
+

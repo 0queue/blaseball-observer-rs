@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use serde_json::Value;
-use crate::game_event::PlayBall;
+use crate::game_event::{PlayBall, Status};
 use crate::game_event::GameEvent;
 use crate::game_event::NotifyGameStart;
 
@@ -37,7 +37,7 @@ struct Team {
 #[serde(rename_all = "camelCase")]
 pub struct Game {
     id: String,
-    bases_occupied: Vec<i32>,
+    bases_occupied: Vec<u32>,
     last_update: String,
     away_bases: u32,
     away_pitcher_name: String,
@@ -107,12 +107,13 @@ fn main() -> anyhow::Result<()> {
             json
         })
         .flat_map(|gs| {
+            let len = gs.len();
             let game = gs.into_iter().find(|g| {
                 g.away_team == target.id || g.home_team == target.id
             });
 
             if game.is_none() {
-                log::warn!("No game found for the {}", target.full_name);
+                log::warn!("No game found for the {}, of {} games", target.full_name, len);
             }
 
             game
@@ -124,6 +125,7 @@ fn main() -> anyhow::Result<()> {
 
         PlayBall::accept(&prev, &cur);
         NotifyGameStart::accept(&prev, &cur);
+        Status::accept(&prev, &cur);
 
         prev.replace(cur);
     }
