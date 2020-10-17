@@ -90,7 +90,7 @@ impl GameEvent for NotifyGameStart {
     }
 }
 
-const TOP: char = '\u{2584}';
+const TOP: char = '\u{25B4}';
 const BOTTOM: char = '\u{25BE}';
 const OUT: char = '\u{25CF}';
 const NOT_OUT: char = '\u{25CB}';
@@ -114,25 +114,25 @@ fn event(prev: &Option<Game>, cur: &Game) -> String {
 
 impl GameEvent for Status {
     fn accept(prev: &Option<Game>, cur: &Game, _rooting_for: &Team) {
-        if cur.game_complete {
+        if cur.game_complete || !cur.game_start {
             return;
         }
 
         let inning = format!(
-            "{}{:2}",
-            pad(if cur.top_of_inning { TOP } else { BOTTOM }),
+            "{}{:<2}",
+            if cur.top_of_inning { TOP } else { BOTTOM },
             cur.inning + 1
         );
 
         let away_score = format!(
-            "{}{:2}",
+            "{}{:<3}",
             pad(cur.away_team_emoji),
             cur.away_score
         );
 
         let home_score = format!(
-            "{}{:2}",
-            pad(cur.away_team_emoji),
+            "{}{:<2}",
+            pad(cur.home_team_emoji),
             cur.home_score
         );
 
@@ -144,11 +144,11 @@ impl GameEvent for Status {
 
         let bases: String = (0..(num_bases - 1)).rev().map(|b| {
             if cur.bases_occupied.contains(&b) {
-                pad(BASE_OCCUPIED)
+                BASE_OCCUPIED
             } else {
-                pad(BASE_EMPTY)
-            }
-        }).collect::<Vec<String>>().join(""); // TODO format justify right
+                BASE_EMPTY
+            }.to_string()
+        }).collect::<Vec<String>>().join("");
 
         let count = format!(
             "{}-{}",
@@ -172,10 +172,10 @@ impl GameEvent for Status {
             a = away_score,
             h = home_score,
             b = bases,
-            w = std::cmp::max(cur.away_bases, cur.home_bases) as usize,
+            w = std::cmp::max(cur.away_bases - 1, cur.home_bases - 1) as usize,
             c = count,
             o = outs,
-            u = cur.last_update.trim_end()
+            u = cur.last_update.trim_end().replace("\n", " ")
         );
 
         println!("{}", status);

@@ -3,6 +3,7 @@ use serde_json::Value;
 use crate::game_event::{PlayBall, Status, GameOver};
 use crate::game_event::GameEvent;
 use crate::game_event::NotifyGameStart;
+use std::io::Write;
 
 mod emoji;
 mod weather;
@@ -17,7 +18,11 @@ const STREAM_ENDPOINT: &str = "https://www.blaseball.com/events/streamData";
 struct Args {
     /// team nickname to watch, or empty to love da crabs
     #[argh(positional, default = "\"crabs\".to_string()")]
-    team_name: String
+    team_name: String,
+
+    /// whether to use knowledge of blaseball to sleep longer between reconnects
+    #[argh(switch)]
+    long_sleep: bool,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -85,6 +90,7 @@ fn message_to_games(msg: &event_source::Message) -> Result<Vec<Game>, serde_json
     })
 }
 
+// TODO LOTS of duplicate log messages, and no idea why
 fn main() -> anyhow::Result<()> {
     let args: Args = argh::from_env();
     pretty_env_logger::init();
@@ -96,7 +102,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("Rooting for the {} {}", emoji::pad(rooting_for.emoji), rooting_for.full_name);
 
-    let schedule_events = event_source::EventSource::new(STREAM_ENDPOINT)
+    let schedule_events = event_source::EventSource::new(STREAM_ENDPOINT, args.long_sleep)
         .flat_map(|m| {
             let json = message_to_games(&m);
 
@@ -127,6 +133,9 @@ fn main() -> anyhow::Result<()> {
         GameOver::accept(&prev, &cur, &rooting_for);
 
         prev.replace(cur);
+
+        std::io::stdout().flush().unwrap();
+        std::io::stderr().flush().unwrap();
     }
 
     println!("all done");

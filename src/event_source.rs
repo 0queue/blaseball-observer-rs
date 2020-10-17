@@ -6,12 +6,14 @@ use std::time::Duration;
 use thiserror::Error;
 
 use crate::event_source::EventSourceError::UreqError;
+use chrono::Timelike;
 
 pub struct EventSource {
     req: ureq::Request,
     reader: Option<BufReader<Box<dyn Read>>>,
     delay: Duration,
     last_event_id: Option<String>,
+    long_sleep: bool,
 }
 
 #[derive(Debug)]
@@ -30,12 +32,13 @@ pub enum EventSourceError {
 }
 
 impl EventSource {
-    pub fn new(url: &str) -> EventSource {
+    pub fn new(url: &str, long_sleep: bool) -> EventSource {
         EventSource {
             req: ureq::get(url),
             reader: None,
             delay: Duration::from_millis(3000),
             last_event_id: None,
+            long_sleep,
         }
     }
 
@@ -68,7 +71,15 @@ impl EventSource {
             if res.is_err() {
                 buf.clear();
                 log::warn!("Reconnecting...");
-                std::thread::sleep(self.delay);
+                let delay = if self.long_sleep {
+                    self.calculate_delay().unwrap_or_else(|| {
+                        log::warn!("Unable to calculate delay, using default");
+                        self.delay
+                    })
+                } else {
+                    self.delay
+                };
+                std::thread::sleep(delay);
                 continue;
             }
 
@@ -142,6 +153,31 @@ impl EventSource {
             data,
             last_event_id: self.last_event_id.clone(),
         }))
+    }
+
+    fn calculate_delay(&self) -> Option<std::time::Duration> {
+        // For efficiency reasons, we don't want to check every 30 seconds for games,
+        // we can use the fact that blaseball tends to start on the hour to calculate
+        // a sleep interval that will sleep for most of that time
+        // Inspired by exponential backoff but in reverse
+        let now = chrono::Local::now();
+        let next_hour = now.with_minute(0)
+            .and_then(|t| t.with_second(0))
+            .and_then(|t| t.with_nanosecond(0))
+            .map(|t| t + (chrono::Duration::hours(1) - chrono::Duration::minutes(3)))?;
+
+        let delta = (next_hour - now) / 2;
+
+        if delta < chrono::Duration::zero() {
+            return Some(self.delay);
+        }
+
+        let sleep_duration = std::cmp::max(delta.to_std().ok()?, self.delay);
+
+        let then = now + chrono::Duration::from_std(sleep_duration).ok()?;
+        log::info!("Sleeping until {}", then.format("%H:%M"));
+
+        Some(sleep_duration)
     }
 }
 
