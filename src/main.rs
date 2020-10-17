@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use serde_json::Value;
-use crate::game_event::{PlayBall, Status};
+use crate::game_event::{PlayBall, Status, GameOver};
 use crate::game_event::GameEvent;
 use crate::game_event::NotifyGameStart;
 
@@ -22,7 +22,7 @@ struct Args {
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct Team {
+pub struct Team {
     id: String,
     // actually a uuid but whatever
     full_name: String,
@@ -90,11 +90,11 @@ fn main() -> anyhow::Result<()> {
     pretty_env_logger::init();
 
     let teams = fetch_teams()?;
-    let target = teams.iter().find(|&e| {
+    let rooting_for = teams.iter().find(|&e| {
         e.nickname.to_ascii_lowercase() == args.team_name.to_ascii_lowercase()
     }).ok_or(anyhow!("no team found"))?;
 
-    println!("target: {:?}", target);
+    println!("target: {:?}", rooting_for);
 
     let schedule_events = event_source::EventSource::new(STREAM_ENDPOINT)
         .flat_map(|m| {
@@ -109,11 +109,11 @@ fn main() -> anyhow::Result<()> {
         .flat_map(|gs| {
             let len = gs.len();
             let game = gs.into_iter().find(|g| {
-                g.away_team == target.id || g.home_team == target.id
+                g.away_team == rooting_for.id || g.home_team == rooting_for.id
             });
 
             if game.is_none() {
-                log::warn!("No game found for the {}, of {} games", target.full_name, len);
+                log::warn!("No game found for the {}, of {} games", rooting_for.full_name, len);
             }
 
             game
@@ -123,9 +123,10 @@ fn main() -> anyhow::Result<()> {
     for cur in schedule_events {
         println!("Found game {}: {} @ {}", cur.id, cur.away_team_emoji, cur.home_team_emoji);
 
-        PlayBall::accept(&prev, &cur);
-        NotifyGameStart::accept(&prev, &cur);
-        Status::accept(&prev, &cur);
+        PlayBall::accept(&prev, &cur, &rooting_for);
+        NotifyGameStart::accept(&prev, &cur, &rooting_for);
+        Status::accept(&prev, &cur, &rooting_for);
+        GameOver::accept(&prev, &cur, &rooting_for);
 
         prev.replace(cur);
     }

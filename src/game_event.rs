@@ -2,15 +2,16 @@ use notify_rust::Notification;
 
 use crate::emoji::pad;
 use crate::Game;
+use crate::Team;
 
 pub trait GameEvent {
-    fn accept(prev: &Option<Game>, cur: &Game);
+    fn accept(prev: &Option<Game>, cur: &Game, rooting_for: &Team);
 }
 
 pub struct PlayBall;
 
 impl GameEvent for PlayBall {
-    fn accept(prev: &Option<Game>, cur: &Game) {
+    fn accept(prev: &Option<Game>, cur: &Game, _rooting_for: &Team) {
         // return if not started yet, or both already started
         let is_first = match (prev, cur.game_start) {
             (None, true) => true,
@@ -23,28 +24,28 @@ impl GameEvent for PlayBall {
         }
 
         let away = format!(
-            "{:2}{} ({:.2}%)",
-            cur.away_team_emoji,
+            "{} {} ({:.2}%)",
+            pad(cur.away_team_emoji),
             cur.away_team_name,
             cur.away_odds * 100f32
         );
 
         let home = format!(
-            "{:2}{} ({:.2}%)",
-            cur.home_team_emoji,
+            "{} {} ({:.2}%)",
+            pad(cur.home_team_emoji),
             cur.home_team_name,
             cur.home_odds * 100f32
         );
 
         let away_pitcher = format!(
-            "{:2}{}",
-            cur.away_team_emoji,
+            "{} {}",
+            pad(cur.away_team_emoji),
             cur.away_pitcher_name
         );
 
         let home_pitcher = format!(
-            "{:2}{}",
-            cur.home_team_emoji,
+            "{} {}",
+            pad(cur.home_team_emoji),
             cur.home_pitcher_name
         );
 
@@ -57,7 +58,7 @@ impl GameEvent for PlayBall {
 pub struct NotifyGameStart;
 
 impl GameEvent for NotifyGameStart {
-    fn accept(prev: &Option<Game>, cur: &Game) {
+    fn accept(prev: &Option<Game>, cur: &Game, _rooting_for: &Team) {
         let is_first = match (prev, cur.game_start) {
             (Some(ref p), true) if !p.game_start => true,
             _ => false
@@ -68,15 +69,15 @@ impl GameEvent for NotifyGameStart {
         }
 
         let away = format!(
-            "{:2}{} ({:.2}%)",
-            cur.away_team_emoji,
+            "{}{} ({:.2}%)",
+            pad(cur.away_team_emoji),
             cur.away_team_name,
             cur.away_odds * 100f32
         );
 
         let home = format!(
-            "{:2}{} ({:.2}%)",
-            cur.home_team_emoji,
+            "{}{} ({:.2}%)",
+            pad(cur.home_team_emoji),
             cur.home_team_name,
             cur.home_odds * 100f32
         );
@@ -112,7 +113,7 @@ fn event(prev: &Option<Game>, cur: &Game) -> String {
 }
 
 impl GameEvent for Status {
-    fn accept(prev: &Option<Game>, cur: &Game) {
+    fn accept(prev: &Option<Game>, cur: &Game, _rooting_for: &Team) {
         if cur.game_complete {
             return;
         }
@@ -178,5 +179,54 @@ impl GameEvent for Status {
         );
 
         println!("{}", status);
+    }
+}
+
+pub struct GameOver;
+
+impl GameEvent for GameOver {
+    fn accept(prev: &Option<Game>, cur: &Game, rooting_for: &Team) {
+        let is_over = match prev {
+            Some(p) if !p.game_complete && cur.game_complete => true,
+            _ => false,
+        };
+
+        if !is_over {
+            return;
+        }
+
+        let (team_score, other_score) = match &cur.away_team {
+            id if id == &rooting_for.id => (cur.away_score, cur.home_score),
+            _ => (cur.home_score, cur.away_score),
+        };
+
+        let judgement = if rooting_for.nickname.to_lowercase() == "crabs" {
+            if team_score > other_score { "Crabs good!" } else { "Crabs bad!" }.to_string()
+        } else {
+            if team_score > other_score {
+                format!("{} win!", rooting_for.nickname)
+            } else {
+                format!("{} lose!", rooting_for.nickname)
+            }
+        };
+
+        let message = format!(
+            "{} {}{} {} to {}{} {}",
+            judgement,
+            pad(cur.away_team_emoji),
+            cur.away_team_nickname,
+            cur.away_score,
+            pad(cur.home_team_emoji),
+            cur.home_team_nickname,
+            cur.home_score
+        );
+
+        Notification::new()
+            .summary("Game Over!")
+            .body(&message)
+            .show()
+            .unwrap();
+
+        println!("> {}", message);
     }
 }
