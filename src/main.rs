@@ -94,7 +94,7 @@ fn main() -> anyhow::Result<()> {
         e.nickname.to_ascii_lowercase() == args.team_name.to_ascii_lowercase()
     }).ok_or(anyhow!("no team found"))?;
 
-    println!("target: {:?}", rooting_for);
+    println!("Rooting for the {} {}", emoji::pad(rooting_for.emoji), rooting_for.full_name);
 
     let schedule_events = event_source::EventSource::new(STREAM_ENDPOINT)
         .flat_map(|m| {
@@ -121,8 +121,6 @@ fn main() -> anyhow::Result<()> {
 
     let mut prev: Option<Game> = None;
     for cur in schedule_events {
-        println!("Found game {}: {} @ {}", cur.id, cur.away_team_emoji, cur.home_team_emoji);
-
         PlayBall::accept(&prev, &cur, &rooting_for);
         NotifyGameStart::accept(&prev, &cur, &rooting_for);
         Status::accept(&prev, &cur, &rooting_for);

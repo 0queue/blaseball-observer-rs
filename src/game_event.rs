@@ -19,7 +19,7 @@ impl GameEvent for PlayBall {
             _ => false
         };
 
-        if !is_first {
+        if !is_first || cur.game_complete {
             return;
         }
 
