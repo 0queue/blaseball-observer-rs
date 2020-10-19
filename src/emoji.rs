@@ -12,6 +12,16 @@ pub fn deserialize<'de, D>(deserializer: D) -> Result<char, D::Error> where D: s
             where
                 E: serde::de::Error,
         {
+
+            if !v.is_ascii() {
+                // TODO this is a workaround for the new Tokyo Lift,
+                //   who are represented by the 🏋️‍♀️ emoji, which is
+                //   combining.  Proper emoji handling should probably now be string-wise
+                //   Should probably also add a switch to turn off combining emojis, as
+                //   the terminals I use don't seem to like them very much
+                return v.chars().next().ok_or_else(|| { E::custom("No chars found in string") })
+            }
+
             u32::from_str_radix(v.trim_start_matches("0x"), 16)
                 .map_err(E::custom)
                 .and_then(|u| {
