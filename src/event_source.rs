@@ -160,6 +160,7 @@ impl EventSource {
         }))
     }
 
+    // TODO instead of this silly halving thing, just wait until the hour
     fn calculate_delay(&self) -> Option<std::time::Duration> {
         // For efficiency reasons, we don't want to check every 30 seconds for games,
         // we can use the fact that blaseball tends to start on the hour to calculate

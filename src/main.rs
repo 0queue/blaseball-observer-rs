@@ -17,10 +17,12 @@ const ALL_TEAMS_ENDPOINT: &str = "https://www.blaseball.com/database/allTeams";
 const STREAM_ENDPOINT: &str = "https://www.blaseball.com/events/streamData";
 
 /// Watch a game of blaseball
+///
+/// RIV Baltimore Crabs
 #[derive(argh::FromArgs, Debug)]
 struct Args {
-    /// team nickname to watch, or empty to love da crabs
-    #[argh(positional, default = "\"crabs\".to_string()")]
+    /// team nickname to watch
+    #[argh(positional)]
     team_name: String,
 
     /// whether to use knowledge of blaseball to sleep longer between reconnects
