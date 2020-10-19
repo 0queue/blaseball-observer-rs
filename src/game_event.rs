@@ -85,14 +85,14 @@ impl GameEvent for NotifyGameStart {
     }
 }
 
-const TOP: char = '\u{25B4}';
-const BOTTOM: char = '\u{25BE}';
-const OUT: char = '\u{25CF}';
-const NOT_OUT: char = '\u{25CB}';
-const BASE_EMPTY: char = '\u{25C7}';
-const BASE_OCCUPIED: char = '\u{25C6}';
-const BLASEBALL: char = '\u{26BE}';
-const ROTATE: char = '\u{27F3}';
+const TOP: char = '\u{25B4}'; // ▴
+const BOTTOM: char = '\u{25BE}'; // ▾
+const OUT: char = '\u{25CF}'; // ●
+const NOT_OUT: char = '\u{25CB}'; // ○
+const BASE_EMPTY: char = '\u{25C7}'; // ◇
+const BASE_OCCUPIED: char = '\u{25C6}'; // ◆
+const BLASEBALL: char = '\u{26BE}'; // ⚾
+const ROTATE: char = '\u{27F3}'; // ⟳
 
 pub struct Status;
 

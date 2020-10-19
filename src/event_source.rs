@@ -160,30 +160,23 @@ impl EventSource {
         }))
     }
 
-    // TODO instead of this silly halving thing, just wait until the hour
+    // if there is less than 30 minutes but more than 2 minutes till the top
+    // of the hour, wait until 2 minutes till the top of the hour
     fn calculate_delay(&self) -> Option<std::time::Duration> {
-        // For efficiency reasons, we don't want to check every 30 seconds for games,
-        // we can use the fact that blaseball tends to start on the hour to calculate
-        // a sleep interval that will sleep for most of that time
-        // Inspired by exponential backoff but in reverse
         let now = chrono::Local::now();
         let next_hour = now.with_minute(0)
             .and_then(|t| t.with_second(0))
             .and_then(|t| t.with_nanosecond(0))
-            .map(|t| t + (chrono::Duration::hours(1) - chrono::Duration::minutes(3)))?;
+            .map(|t| t + (chrono::Duration::hours(1) - chrono::Duration::minutes(2)))?;
 
-        let delta = (next_hour - now) / 2;
+        let delta = next_hour - now;
 
-        if delta < chrono::Duration::zero() {
-            return Some(self.delay);
+        if delta < chrono::Duration::minutes(30) && delta > chrono::Duration::minutes(2) {
+            log::info!("Sleeping until {}", (now + delta).format("%H:%M"));
+            delta.to_std().ok()
+        } else {
+            None
         }
-
-        let sleep_duration = std::cmp::max(delta.to_std().ok()?, self.delay);
-
-        let then = now + chrono::Duration::from_std(sleep_duration).ok()?;
-        log::info!("Sleeping until {}", then.format("%H:%M"));
-
-        Some(sleep_duration)
     }
 }
 
