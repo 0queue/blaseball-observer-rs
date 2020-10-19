@@ -57,6 +57,7 @@ impl EventSource {
 
                     if response.status() == 204 {
                         // all done
+                        log::info!("Received 204");
                         break Ok(Vec::new());
                     }
 
@@ -84,6 +85,10 @@ impl EventSource {
             }
 
             self.reader.replace(reader);
+
+            if buf.is_empty() {
+                log::warn!("Received empty buf");
+            }
 
             break Ok(buf);
         }

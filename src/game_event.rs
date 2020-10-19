@@ -59,7 +59,7 @@ pub struct NotifyGameStart;
 
 impl GameEvent for NotifyGameStart {
     fn accept(prev: &Option<Game>, cur: &Game, _rooting_for: &Team) {
-        if !matches!((prev, cur.game_start), (Some(ref p), true) if !p.game_start) {
+        if !matches!((prev, cur.game_start), (Some(ref p), true) if p.game_complete && !cur.game_complete) {
             return;
         }
 
@@ -99,6 +99,7 @@ pub struct Status;
 fn event(prev: &Option<Game>, cur: &Game) -> String {
     match prev {
         None => "  ".to_string(),
+        Some(p) if p == cur => "==".to_string(),
         Some(p) if p.away_score < cur.away_score => pad(BLASEBALL),
         Some(p) if p.home_score < cur.home_score => pad(BLASEBALL),
         Some(p) if p.top_of_inning != cur.top_of_inning => pad(ROTATE),

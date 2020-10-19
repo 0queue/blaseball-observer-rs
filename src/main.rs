@@ -1,6 +1,9 @@
-use anyhow::{anyhow, Context};
+use anyhow::anyhow;
+use anyhow::Context;
 use serde_json::Value;
-use crate::game_event::{PlayBall, Status, GameOver};
+use crate::game_event::PlayBall;
+use crate::game_event::Status;
+use crate::game_event::GameOver;
 use crate::game_event::GameEvent;
 use crate::game_event::NotifyGameStart;
 use std::io::Write;
@@ -38,7 +41,7 @@ pub struct Team {
     emoji: char,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Game {
     id: String,
