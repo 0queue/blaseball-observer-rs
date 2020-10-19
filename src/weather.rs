@@ -1,12 +1,21 @@
 fn weather(w: u64) -> String {
+    log::info!("weather: {}", w);
     match w {
-        1 => "Sunny",
+        0 => "Void",
+        1 => "Sun 2", // formerly Sunny
+        2 => "Overcast",
+        3 => "Rainy",
+        4 => "Sandstorm",
+        5 => "Snowy",
+        6 => "Acidic",
         7 => "Solar Eclipse",
+        8 => "Glitter",
         9 => "Blooddrain",
         10 => "Peanuts",
         11 => "Lots of Birds",
         12 => "Feedback",
         13 => "Reverb",
+        14 => "Black Hole",
         _ => "?",
     }.to_string()
 }
