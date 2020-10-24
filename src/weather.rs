@@ -1,4 +1,5 @@
 fn weather(w: u64) -> String {
+    log::info!("weather: {}", w);
     match w {
         0 => "Void",
         1 => "Sun 2", // formerly Sunny
