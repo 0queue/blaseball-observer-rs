@@ -114,6 +114,10 @@ impl GameEvent for Status {
             return;
         }
 
+        if matches!(prev, Some(p) if p == cur) {
+            return; // duplicate :(
+        }
+
         let inning = format!(
             "{}{:<2}",
             if cur.top_of_inning { TOP } else { BOTTOM },
